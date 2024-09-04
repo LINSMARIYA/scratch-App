@@ -1,13 +1,14 @@
 import React from 'react';
 import './App.css';
+import MainArea from './containers/mainArea';
+import ErrorBoundary from './errorBoundary';
 
 function App() {
   return (
     <div className="App">
-      <div className='text-blue-800'>
-      New Ecommerce Demo Application
-      </div>
-   
+      <ErrorBoundary>
+    <MainArea/>
+    </ErrorBoundary>
     </div>
   );
 }
