@@ -20,13 +20,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // You can also log the error to an error reporting service
     console.error("ErrorBoundary caught an error", error, errorInfo);
   }
 
   render(): React.ReactNode {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
       return <div className="p-4 text-red-500">Something went wrong.</div>;
     }
 
