@@ -5,11 +5,11 @@ import Sidebar from '../components/sidebar';
 import Playground from '../components/playground';
 import ViewArea from '../components/viewArea'
 
+import { SpriteBlockType } from '../type';
 
 const MainArea = () => {
-	const [blocks, setBlocks] = useState<
-		{ type: string; value: string; x: number; y: number }[]
-	>([]);
+	const [blocks, setBlocks] = useState<SpriteBlockType[]>([]);
+	const [selectedSprite, setSelectedSprite] = useState<string>('Cat1');
 
 	return (
 		<>
@@ -21,11 +21,10 @@ const MainArea = () => {
 				<Sidebar />
                 </div>
                 <div className='w-[40%] h-full'>
-				<Playground {...{blocks, setBlocks}}/>
+				<Playground spriteBlock={blocks} setBlocks={setBlocks} selectedSprite={selectedSprite} setSelectedSprite={setSelectedSprite} />
                 </div>
                 <div className='w-[40%] h-full'>
-				<ViewArea blockActions={blocks}/>
-              
+				<ViewArea blockActions={blocks} selectedSprite={selectedSprite} setBlocks={setBlocks} setSelectedSprite={setSelectedSprite}/>
                 </div>
 			</div>
 		</>

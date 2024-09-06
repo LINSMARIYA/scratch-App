@@ -18,7 +18,12 @@
 	"plugins": ["react","jest"],
 	"rules": {
 		"react/jsx-uses-react": "error",
-		"react/jsx-uses-vars": "error"
+		"react/jsx-uses-vars": "error",
+		"no-unsafe-assignment": "off",
+		"no-unsafe-return": "off",
+		"no-unsafe-call": "off",
+		"no-unsafe-member-access": "off",
+		"no-unsafe-optional-chaining": "off"
 	},
 	"settings": {
         "react": {
