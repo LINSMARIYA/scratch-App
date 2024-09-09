@@ -28,12 +28,32 @@ const ViewArea = ({
 }) => {
 	const [stageSprites, setStageSprites] = useState<StageSprites[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
+	const [collision, setIsCollision] = useState(false);
+	const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
 
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const sprites = [
-		{ src: cat, name: 'Sprite 1', x: 0, label: 'Cat', y: 0, rotation: 0 },
-		{ src: dog, name: 'Sprite 2', x: 0, y: 0, label: 'Dog', rotation: 0 },
+		{
+			src: cat,
+			name: 'Sprite 1',
+			x: 0,
+			label: 'Cat',
+			y: 0,
+			rotation: 0,
+			w: 100,
+			h: 89,
+		},
+		{
+			src: dog,
+			name: 'Sprite 2',
+			x: 0,
+			y: 0,
+			label: 'Dog',
+			rotation: 0,
+			w: 100,
+			h: 100,
+		},
 	];
 
 	const detectCollision = (sprite1: StageSprites, sprite2: StageSprites) => {
@@ -49,57 +69,87 @@ const ViewArea = ({
 		blockActions?.filter((block) => block?.id === selectedSprite)?.[0]
 			?.blocks ?? [];
 
-	const handleCollision = useCallback(() => {
-		if (selectedSprite) {
-			const activeSprite = stageSprites.find(
-				(sprite) => sprite.id === selectedSprite
-			);
-			// const activeSpriteActions =
-			// 	blockActions.find((block) => block.id === selectedSprite)?.blocks || [];
+	const handleCollision = () => {
+		const activeSprite = stageSprites.find(
+			(sprite) => sprite.id === selectedSprite
+		);
+		const otherSprites = stageSprites.filter(
+			(sprite) => sprite.id !== selectedSprite
+		);
+		const pathStart = {
+			x: parseInt(initialPosition.x.toString()),
+			y: parseInt(initialPosition.y.toString()),
+		};
+		if (!activeSprite) return;
+		const pathEnd = {
+			x: parseInt(activeSprite.x.toString()),
+			y: parseInt(activeSprite.y.toString()),
+		};
 
-			if (activeSprite) {
-				const updatedSprites = [...stageSprites];
-				let collisionDetected = false;
-				for (const sprite of updatedSprites) {
-					console.log('activeSprite:', activeSprite, sprite);
-					if (
-						sprite.id !== selectedSprite &&
-						detectCollision(activeSprite, sprite)
-					) {
-						console.log(
-							'Collision detected between:',
-							selectedSprite,
-							sprite.id
-						);
-						//Swap positions
-						// const activeIndex = updatedSprites.findIndex((s) => s.id === selectedSprite);
-						// const spriteIndex = updatedSprites.findIndex((s) => s.id === sprite.id);
+		otherSprites.forEach((otherDiv) => {
+			const toleranceX = otherDiv.w / 2; // Horizontal tolerance
+			const toleranceY = otherDiv.h / 2; // Vertical tolerance
 
-						// Swap animations
-						const activeActions =
-							blockActions.find((b) => b.id === selectedSprite)?.blocks || [];
-						const spriteActions =
-							blockActions.find((b) => b.id === sprite.id)?.blocks || [];
+			// Check if the activeSprite's x is within the horizontal range of otherDiv considering tolerance
+			const hasSameX =
+				otherDiv.x - toleranceX < activeSprite.x &&
+				activeSprite.x < otherDiv.x + otherDiv.x + toleranceX;
 
-						const updatedBlockActions = blockActions.map((b) =>
-							b.id === selectedSprite
-								? { ...b, blocks: spriteActions }
-								: b.id === sprite.id
-									? { ...b, blocks: activeActions }
-									: b
-						);
+			// Check if the activeSprite's y is within the vertical range of otherDiv considering tolerance
+			const hasSameY =
+				otherDiv.y - toleranceY < activeSprite.y &&
+				activeSprite.y < otherDiv.y + otherDiv.y + toleranceY;
+			if (hasSameX && hasSameY) setIsCollision(true);
+		});
 
-						setBlocks(updatedBlockActions);
-						collisionDetected = true;
-					}
-				}
+		console.log('Checking collision');
+	};
 
-				if (collisionDetected) {
-					setStageSprites(updatedSprites);
-				}
-			}
-		}
-	}, [stageSprites, selectedSprite]);
+	const horizontalBoundary = (val: number) => {
+		const mouseX = Math.min(Math.max(val, -40), 280);
+		return mouseX;
+	};
+
+	const verticalBoundary = (val: number) => {
+		const mouseY = Math.max(Math.min(val, 260), -40);
+		return mouseY;
+	};
+
+	const moveDivForward = (
+		div: { x: number; y: number },
+		step: number,
+		angle: number
+	) => {
+		// Convert angle from degrees to radians
+
+		const angleInRadians = angle * (Math.PI / 180);
+
+		// Calculate the change in x and y based on angle and step
+		const deltaX = step * Math.cos(angleInRadians);
+		const deltaY = step * Math.sin(angleInRadians);
+
+		const newX = div.x + deltaX;
+		const newY = div.y + deltaY;
+
+		return { x: newX, y: newY };
+	};
+
+	const moveDivBackward = (
+		div: { x: number; y: number },
+		step: number,
+		angle: number
+	) => {
+		// Convert angle from degrees to radians
+		const angleInRadians = angle * (Math.PI / 180);
+
+		const deltaX = -step * Math.cos(angleInRadians);
+		const deltaY = -step * Math.sin(angleInRadians);
+
+		const newX = div.x + deltaX;
+		const newY = div.y + deltaY;
+
+		return { x: newX, y: newY };
+	};
 
 	const executeAction = async (action: BlockAction) => {
 		return new Promise<void>((resolve) => {
@@ -108,11 +158,29 @@ const ViewArea = ({
 					prevSprites.map((sprite) =>
 						sprite.id === selectedSprite
 							? (() => {
+									const moveForward = moveDivForward(
+										sprite,
+										Number(action.value),
+										sprite.rotation
+									);
+									const moveBackward = moveDivBackward(
+										sprite,
+										Number(action.value),
+										sprite.rotation
+									);
 									switch (action.type) {
 										case 'moveFront':
-											return { ...sprite, x: sprite.x + Number(action.value) };
+											return {
+												...sprite,
+												x: horizontalBoundary(moveForward.x),
+												y: verticalBoundary(moveForward.y),
+											};
 										case 'moveBack':
-											return { ...sprite, x: sprite.x - Number(action.value) };
+											return {
+												...sprite,
+												x: horizontalBoundary(moveBackward.x),
+												y: verticalBoundary(moveBackward.y),
+											};
 										case 'clockwise':
 											return {
 												...sprite,
@@ -124,9 +192,15 @@ const ViewArea = ({
 												rotation: sprite.rotation - Number(action.value),
 											};
 										case 'xPosition':
-											return { ...sprite, x: Number(action.value) };
+											return {
+												...sprite,
+												x: horizontalBoundary(Number(action.value)),
+											};
 										case 'yPosition':
-											return { ...sprite, y: Number(action.value) };
+											return {
+												...sprite,
+												y: verticalBoundary(Number(action.value)),
+											};
 										default:
 											return sprite;
 									}
@@ -134,9 +208,14 @@ const ViewArea = ({
 							: sprite
 					)
 				);
+				handleCollision();
 				resolve();
-			}, 500); // Delay between actions
+			}, 10); // Delay between actions
 		});
+	};
+
+	const stopAnimation = () => {
+		setIsPlaying(false);
 	};
 
 	const handleAddSprite = (sprite: Sprite) => {
@@ -149,6 +228,8 @@ const ViewArea = ({
 				...sprite,
 				x: Math.random() * 500,
 				y: Math.random() * 300,
+				h: sprite.h,
+				w: sprite.w,
 				id: id,
 			},
 		]); // Add new sprite to playground
@@ -162,11 +243,16 @@ const ViewArea = ({
 
 	const handlePlayActions = async () => {
 		setIsPlaying(true);
+		const activeSprite = stageSprites.find(
+			(sprite) => sprite.id === selectedSprite
+		);
+		if (!activeSprite) return;
+		setInitialPosition({ x: activeSprite?.x, y: activeSprite?.y });
 		for (const action of actionList) {
 			await executeAction(action).catch((error) => {
 				console.error('Error executing action:', error);
-				handleCollision(); // Handle collision after each action
-			}); // Execute each action sequentially
+				// Handle collision after each action
+			});
 		}
 		setIsPlaying(false); // Stop after all actions are done
 		return true;
@@ -184,15 +270,19 @@ const ViewArea = ({
 
 	const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
-		// setSelectedSprite(e.dataTransfer.getData('spriteID'))
+
 		if (e.clientX === 0 && e.clientY === 0) return;
 		const containerRect = containerRef?.current?.getBoundingClientRect();
 		if (!containerRect) return;
-		// console.log(containerRect?.left,containerRect?.top);
-		// console.log(e.clientX, e.clientY);
-		const mouseX = Math.max(e.clientX - containerRect?.left - 80 ,-40);
-		const mouseY = Math.min(e.clientY - containerRect?.top - 80,260);
-		console.log(mouseX, mouseY);
+
+		const mouseX = Math.min(
+			Math.max(e.clientX - containerRect?.left - 80, -40),
+			280
+		);
+		const mouseY = Math.max(
+			Math.min(e.clientY - containerRect?.top - 80, 260),
+			-40
+		);
 		setStageSprites((prevSprites) =>
 			prevSprites.map((sprite) =>
 				sprite.id === selectedSprite
@@ -202,16 +292,36 @@ const ViewArea = ({
 		);
 	};
 
+	const onSpriteDragStart = (
+		e: React.DragEvent<HTMLDivElement>,
+		spriteId: string
+	) => {
+		e.dataTransfer.setData('spriteID', spriteId);
+		setSelectedSprite(spriteId);
+
+		// Set the invisible element as the drag image
+		const invisibleElement = document.createElement('div');
+		invisibleElement.style.width = '0px';
+		invisibleElement.style.height = '0px';
+		document.body.appendChild(invisibleElement);
+		e.dataTransfer.setDragImage(invisibleElement, 0, 0);
+	};
+
 	useEffect(() => {
-		// Add sprite on mount
-		handleAddSprite({
-			src: cat,
-			name: 'Sprite 1',
-			x: 0,
-			label: 'Cat',
-			y: 0,
-			rotation: 0,
-		});
+		setStageSprites([
+			{
+				src: cat,
+				name: 'Sprite 1',
+				x: 0,
+				id: 'Cat1',
+				y: 0,
+				rotation: 0,
+				h: 100,
+				w: 100,
+			},
+		]);
+		setBlocks(() => [{ id: 'Cat1', blocks: [] }]);
+		setSelectedSprite('Cat1');
 
 		// Cleanup on unmount
 		return () => {
@@ -234,13 +344,9 @@ const ViewArea = ({
 					<div
 						key={index}
 						className="relative"
-						draggable={sprite.id===selectedSprite}
-						onDragStart={(e) => {
-							e.dataTransfer.setData('spriteID', sprite.id);
-							setSelectedSprite(sprite.id)
-						}}
+						draggable
+						onDragStart={(e) => onSpriteDragStart(e, sprite.id)}
 						onDrag={handleDrag}
-					
 					>
 						<sprite.src
 							style={{
@@ -275,7 +381,7 @@ const ViewArea = ({
 				))}
 			</div>
 			<div className="py-2 font-medium text-left">
-				Add character to Playground 
+				Add character to Playground
 			</div>
 			<div className="flex space-x-4 mb-4 h-10">
 				{sprites.map((character, index) => (

@@ -5,6 +5,8 @@ type Sprite = {
 	y: number;
 	rotation: number;
 	label: string;
+	h: number;
+	w: number;
 };
 
 type StageSprites = {
@@ -14,6 +16,8 @@ type StageSprites = {
 	y: number;
 	rotation: number;
 	id: string;
+	h: number;
+	w: number;
 };
 
 type BlockAction = {
