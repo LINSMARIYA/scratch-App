@@ -6,6 +6,7 @@ import React, {
 	SetStateAction,
 	useCallback,
 	useEffect,
+	useRef,
 	useState,
 } from 'react';
 
@@ -27,6 +28,8 @@ const ViewArea = ({
 }) => {
 	const [stageSprites, setStageSprites] = useState<StageSprites[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
+
+	const containerRef = useRef<HTMLDivElement>(null);
 
 	const sprites = [
 		{ src: cat, name: 'Sprite 1', x: 0, label: 'Cat', y: 0, rotation: 0 },
@@ -58,12 +61,16 @@ const ViewArea = ({
 				const updatedSprites = [...stageSprites];
 				let collisionDetected = false;
 				for (const sprite of updatedSprites) {
-					console.log('activeSprite:', activeSprite,sprite);
+					console.log('activeSprite:', activeSprite, sprite);
 					if (
 						sprite.id !== selectedSprite &&
 						detectCollision(activeSprite, sprite)
 					) {
-						console.log('Collision detected between:', selectedSprite, sprite.id);
+						console.log(
+							'Collision detected between:',
+							selectedSprite,
+							sprite.id
+						);
 						//Swap positions
 						// const activeIndex = updatedSprites.findIndex((s) => s.id === selectedSprite);
 						// const spriteIndex = updatedSprites.findIndex((s) => s.id === sprite.id);
@@ -175,6 +182,26 @@ const ViewArea = ({
 		setSelectedSprite(id);
 	};
 
+	const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		// setSelectedSprite(e.dataTransfer.getData('spriteID'))
+		if (e.clientX === 0 && e.clientY === 0) return;
+		const containerRect = containerRef?.current?.getBoundingClientRect();
+		if (!containerRect) return;
+		// console.log(containerRect?.left,containerRect?.top);
+		// console.log(e.clientX, e.clientY);
+		const mouseX = Math.max(e.clientX - containerRect?.left - 80 ,-40);
+		const mouseY = Math.min(e.clientY - containerRect?.top - 80,260);
+		console.log(mouseX, mouseY);
+		setStageSprites((prevSprites) =>
+			prevSprites.map((sprite) =>
+				sprite.id === selectedSprite
+					? { ...sprite, x: mouseX, y: mouseY }
+					: sprite
+			)
+		);
+	};
+
 	useEffect(() => {
 		// Add sprite on mount
 		handleAddSprite({
@@ -194,13 +221,6 @@ const ViewArea = ({
 
 	return (
 		<div className="p-4 h-[calc(100vh-80px)] bg-white">
-			<button
-				onClick={handlePlayButtonClick}
-				disabled={isPlaying}
-				className={`mt-4 p-2 bg-green-500 text-white rounded`}
-			>
-				{isPlaying ? 'Playing...' : 'Play Actions'}
-			</button>
 			<div
 				className="w-full p-10"
 				style={{
@@ -208,9 +228,20 @@ const ViewArea = ({
 					border: '1px solid black',
 					position: 'relative',
 				}}
+				ref={containerRef}
 			>
 				{stageSprites?.map((sprite: StageSprites, index: number) => (
-					<div key={index} className="relative">
+					<div
+						key={index}
+						className="relative"
+						draggable={sprite.id===selectedSprite}
+						onDragStart={(e) => {
+							e.dataTransfer.setData('spriteID', sprite.id);
+							setSelectedSprite(sprite.id)
+						}}
+						onDrag={handleDrag}
+					
+					>
 						<sprite.src
 							style={{
 								position: 'absolute',
@@ -244,9 +275,9 @@ const ViewArea = ({
 				))}
 			</div>
 			<div className="py-2 font-medium text-left">
-				Add character to Playground
+				Add character to Playground 
 			</div>
-			<div className="flex space-x-4 mb-4">
+			<div className="flex space-x-4 mb-4 h-10">
 				{sprites.map((character, index) => (
 					<button
 						key={index}
@@ -256,6 +287,13 @@ const ViewArea = ({
 						<span>{character.name}</span>
 					</button>
 				))}
+				<button
+					onClick={handlePlayButtonClick}
+					disabled={isPlaying}
+					className={` p-2 bg-green-500 text-white rounded`}
+				>
+					{isPlaying ? 'Playing...' : 'Play Actions'}
+				</button>
 			</div>
 			<div className="py-2 font-medium text-left">Select character</div>
 			<div className="flex space-x-4 mb-4">
@@ -263,7 +301,7 @@ const ViewArea = ({
 					<button
 						key={index}
 						onClick={() => handleSelectSprite(character.id)}
-						className={`flex flex-col items-center p-2 ${character.id === selectedSprite ? 'bg-purple-500' : 'bg-blue-500'} text-white rounded`}
+						className={`flex flex-col items-center p-2 ${character.id === selectedSprite ? 'bg-purple-500 scale-110 border-2 border-black' : 'bg-blue-500'} text-white rounded`}
 					>
 						<character.src width="50px" height="50px" />
 						<span>{character.id}</span>
