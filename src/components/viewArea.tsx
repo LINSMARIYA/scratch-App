@@ -14,6 +14,7 @@ import { ReactComponent as cat } from '../assets/cat.svg';
 import { ReactComponent as dog } from '../assets/dog.svg';
 
 import { BlockAction, Sprite, SpriteBlockType, StageSprites } from '../type';
+import Modal from './modal';
 
 const ViewArea = ({
 	blockActions,
@@ -28,7 +29,8 @@ const ViewArea = ({
 }) => {
 	const [stageSprites, setStageSprites] = useState<StageSprites[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
-	const [collision, setIsCollision] = useState(false);
+	const [collision, setIsCollision] = useState<string>('');
+	const [isOpen, setIsOpen] = useState(false);
 	const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
 
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -99,10 +101,11 @@ const ViewArea = ({
 			const hasSameY =
 				otherDiv.y - toleranceY < activeSprite.y &&
 				activeSprite.y < otherDiv.y + otherDiv.y + toleranceY;
-			if (hasSameX && hasSameY) setIsCollision(true);
+			if (hasSameX && hasSameY) {
+				setIsCollision(otherDiv.id);
+				setIsOpen(true);
+			}
 		});
-
-		console.log('Checking collision');
 	};
 
 	const horizontalBoundary = (val: number) => {
@@ -209,9 +212,36 @@ const ViewArea = ({
 					)
 				);
 				handleCollision();
+				if (collision) {
+					console.log("herre")
+					interchangeActions(selectedSprite, collision);
+					
+				}
 				resolve();
 			}, 10); // Delay between actions
 		});
+	};
+
+	const interchangeActions = (id1: string, id2: string) => {
+		setBlocks((prevSprites) => {
+			const sprite1 = prevSprites.find((sprite) => sprite.id === id1);
+			const sprite2 = prevSprites.find((sprite) => sprite.id === id2);
+
+			if (!sprite1 || !sprite2) return prevSprites;
+
+			const updatedSprites = prevSprites.map((sprite) => {
+				if (sprite.id === id1) {
+					return { ...sprite, blocks: sprite2.blocks };
+				} else if (sprite.id === id2) {
+					return { ...sprite, blocks: sprite1.blocks };
+				} else {
+					return sprite;
+				}
+			});
+
+			return updatedSprites;
+		});
+		setIsCollision('');
 	};
 
 	const stopAnimation = () => {
@@ -317,7 +347,7 @@ const ViewArea = ({
 				y: 0,
 				rotation: 0,
 				h: 100,
-				w: 100,
+				w: 80,
 			},
 		]);
 		setBlocks(() => [{ id: 'Cat1', blocks: [] }]);
@@ -414,6 +444,12 @@ const ViewArea = ({
 					</button>
 				))}
 			</div>
+			<Modal
+				text="Collision between sprites detected"
+				isVisible={isOpen}
+				onClickClose={() => setIsOpen(false)}
+				autoCloseTime={2000}
+			></Modal>
 		</div>
 	);
 };

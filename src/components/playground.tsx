@@ -55,10 +55,32 @@ const Playground = ({
 		);
 	};
 
+	const onClickResetAction = () => {
+		setBlocks((prevSprites) =>
+			prevSprites.map((sprite: SpriteBlockType) =>
+				sprite.id === selectedSprite
+					? {
+							...sprite,
+							blocks: [],
+						}
+					: sprite
+			)
+		);
+	};
+
 	return (
 		<div className="p-4 h-[calc(100vh-80px)] bg-white">
+			<div className="w-full ">
+				<button
+					className="bg-red-500 rounded-md p-2 text-left font-semibold text-white"
+					onClick={onClickResetAction}
+				>
+					Reset Actions
+				</button>
+			</div>
+
 			<div
-				className="w-full h-full border-gray-500 mt-4 relative"
+				className="w-full h-full my-4 p-4 relative overflow-auto"
 				onDragOver={(e) => e.preventDefault()}
 				onDrop={handleDrop}
 			>
