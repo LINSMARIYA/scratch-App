@@ -109,7 +109,7 @@ const ViewArea = ({
 	};
 
 	const horizontalBoundary = (val: number) => {
-		const mouseX = Math.min(Math.max(val, -40), 280);
+		const mouseX = Math.min(Math.max(val, -40), 380);
 		return mouseX;
 	};
 
@@ -276,7 +276,7 @@ const ViewArea = ({
 
 		const mouseX = Math.min(
 			Math.max(e.clientX - containerRect?.left - 80, -40),
-			280
+			380
 		);
 		const mouseY = Math.max(
 			Math.min(e.clientY - containerRect?.top - 80, 260),
