@@ -29,9 +29,7 @@ const ViewArea = ({
 }) => {
 	const [stageSprites, setStageSprites] = useState<StageSprites[]>([]);
 	const [isPlaying, setIsPlaying] = useState(false);
-	const [collision, setIsCollision] = useState<string>('');
 	const [isOpen, setIsOpen] = useState(false);
-	const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
 
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +42,7 @@ const ViewArea = ({
 			y: 0,
 			rotation: 0,
 			w: 100,
-			h: 89,
+			h: 100,
 		},
 		{
 			src: dog,
@@ -53,19 +51,10 @@ const ViewArea = ({
 			y: 0,
 			label: 'Dog',
 			rotation: 0,
-			w: 100,
+			w:89,
 			h: 100,
 		},
 	];
-
-	const detectCollision = (sprite1: StageSprites, sprite2: StageSprites) => {
-		return !(
-			sprite1.x + 100 < sprite2.x ||
-			sprite1.x > sprite2.x + 100 ||
-			sprite1.y + 100 < sprite2.y ||
-			sprite1.y > sprite2.y + 100
-		);
-	};
 
 	const actionList =
 		blockActions?.filter((block) => block?.id === selectedSprite)?.[0]
@@ -78,19 +67,12 @@ const ViewArea = ({
 		const otherSprites = stageSprites.filter(
 			(sprite) => sprite.id !== selectedSprite
 		);
-		const pathStart = {
-			x: parseInt(initialPosition.x.toString()),
-			y: parseInt(initialPosition.y.toString()),
-		};
+
 		if (!activeSprite) return;
-		const pathEnd = {
-			x: parseInt(activeSprite.x.toString()),
-			y: parseInt(activeSprite.y.toString()),
-		};
 
 		otherSprites.forEach((otherDiv) => {
-			const toleranceX = otherDiv.w / 2; // Horizontal tolerance
-			const toleranceY = otherDiv.h / 2; // Vertical tolerance
+			const toleranceX = otherDiv.w - 10; // Horizontal tolerance
+			const toleranceY = otherDiv.h - 10; // Vertical tolerance
 
 			// Check if the activeSprite's x is within the horizontal range of otherDiv considering tolerance
 			const hasSameX =
@@ -102,7 +84,25 @@ const ViewArea = ({
 				otherDiv.y - toleranceY < activeSprite.y &&
 				activeSprite.y < otherDiv.y + otherDiv.y + toleranceY;
 			if (hasSameX && hasSameY) {
-				setIsCollision(otherDiv.id);
+				setBlocks((prevSprites) => {
+					const sprite1 = prevSprites.find((sprite) => sprite.id === selectedSprite);
+					const sprite2 = prevSprites.find((sprite) => sprite.id === otherDiv.id);
+		
+					if (!sprite1 || !sprite2) return prevSprites;
+		
+					const updatedSprites = prevSprites.map((sprite) => {
+						if (sprite.id === selectedSprite) {
+							return { ...sprite, blocks: sprite2.blocks };
+						} else if (sprite.id === otherDiv.id
+						) {
+							return { ...sprite, blocks: sprite1.blocks };
+						} else {
+							return sprite;
+						}
+					});
+		
+					return updatedSprites;
+				});
 				setIsOpen(true);
 			}
 		});
@@ -212,41 +212,11 @@ const ViewArea = ({
 					)
 				);
 				handleCollision();
-				if (collision) {
-					console.log("herre")
-					interchangeActions(selectedSprite, collision);
-					
-				}
+				
 				resolve();
 			}, 10); // Delay between actions
 		});
-	};
-
-	const interchangeActions = (id1: string, id2: string) => {
-		setBlocks((prevSprites) => {
-			const sprite1 = prevSprites.find((sprite) => sprite.id === id1);
-			const sprite2 = prevSprites.find((sprite) => sprite.id === id2);
-
-			if (!sprite1 || !sprite2) return prevSprites;
-
-			const updatedSprites = prevSprites.map((sprite) => {
-				if (sprite.id === id1) {
-					return { ...sprite, blocks: sprite2.blocks };
-				} else if (sprite.id === id2) {
-					return { ...sprite, blocks: sprite1.blocks };
-				} else {
-					return sprite;
-				}
-			});
-
-			return updatedSprites;
-		});
-		setIsCollision('');
-	};
-
-	const stopAnimation = () => {
-		setIsPlaying(false);
-	};
+	}
 
 	const handleAddSprite = (sprite: Sprite) => {
 		const count =
@@ -277,7 +247,6 @@ const ViewArea = ({
 			(sprite) => sprite.id === selectedSprite
 		);
 		if (!activeSprite) return;
-		setInitialPosition({ x: activeSprite?.x, y: activeSprite?.y });
 		for (const action of actionList) {
 			await executeAction(action).catch((error) => {
 				console.error('Error executing action:', error);

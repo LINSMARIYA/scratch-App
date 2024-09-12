@@ -18,13 +18,13 @@ const Modal = ({
                 console.log('close')
 			}, autoCloseTime);
 
-			return () => clearTimeout(timer); // Cleanup the timer on component unmount
+			return () => clearTimeout(timer); 
 		}
 	}, [isVisible]);
 
-	const handleClose = () => {
-		onClickClose()
-	};
+	// const handleClose = () => {
+	// 	onClickClose()
+	// };
 
 	if (!isVisible) return null;
 
